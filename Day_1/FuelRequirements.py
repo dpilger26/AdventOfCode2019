@@ -3,9 +3,11 @@ Calculates the sum total of Santa's fuel requirements
 based on the input file
 """
 import math
+import os
+import pathlib
 import pandas as pd
 
-INPUT_FILE = r'./input.txt'
+INPUT_FILE = os.path.join(pathlib.Path(__file__).parent, 'input.txt')
 COLUMN_NAME = 'Mass'
 
 
