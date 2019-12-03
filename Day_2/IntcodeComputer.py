@@ -35,7 +35,7 @@ def restoreProgram():
 
 def runGravityAssistProgram():
     """
-    Runs the gravity assist program the program by brute force
+    Runs the gravity assist program by brute force
     """
     program = readInput()
 
