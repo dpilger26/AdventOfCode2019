@@ -9,12 +9,12 @@ from typing import Tuple, List
 import numpy as np
 
 INPUT_FILE = os.path.join(pathlib.Path(__file__).parent, 'input.txt')
+# INPUT_FILE = os.path.join(pathlib.Path(__file__).parent, 'inputTest.txt')
 
 
 def closestIntersection():
     """
-
-    :return:
+    Finds the shortest manhatten distance of the intersections
     """
     wire1Path, wire2Path = readInput()
 
@@ -31,8 +31,7 @@ def closestIntersection():
 
 def shortestIntersetion():
     """
-
-    :return:
+    Finds the sortest full path of the intersections
     """
     wire1Path, wire2Path = readInput()
 
@@ -40,75 +39,83 @@ def shortestIntersetion():
     wire2XY = createEdgeMap(wire2Path)
 
     if len(wire1XY) > len(wire2XY):
-        print('in if')
-        length = len(wire2XY)
-        theIdx = 0
-        thePair = None
-        for idx, xyPair in enumerate(wire2XY):
-            print(f'idx = {idx} of {length}')
-            if xyPair in wire1XY:
-                theIdx = idx
-                thePair = xyPair
-                break
-
-        steps2 = np.sum(np.abs(np.diff(wire2XY[:theIdx], axis=0)), axis=0).sum()
-
-        for idx, xyPair in enumerate(wire1XY):
-            if xyPair == thePair:
-                theIdx = idx
-
-        steps1 = np.sum(np.abs(np.diff(wire1XY[:theIdx], axis=0)), axis=0).sum()
-        totalSteps = steps1 + steps2
+        totalSteps = findIntersectionPathLengths(wire1XY, wire2XY, wire1Path, wire2Path)
     else:
-        print('in else')
-        length = len(wire1XY)
-        theIdx = 0
-        thePair = None
-        for idx, xyPair in enumerate(wire1XY):
-            print(f'idx = {idx} of {length}')
-            if xyPair in wire2XY:
-                theIdx = idx
-                thePair = xyPair
-                break
-        steps1 = np.sum(np.abs(np.diff(wire1XY[:theIdx], axis=0)), axis=0).sum()
+        totalSteps = findIntersectionPathLengths(wire2XY, wire1XY, wire1Path, wire2Path)
 
-        for idx, xyPair in enumerate(wire2XY):
-            if xyPair == thePair:
-                theIdx = idx
-
-        steps2 = np.sum(np.abs(np.diff(wire2XY[:theIdx], axis=0)), axis=0).sum()
-        totalSteps = steps1 + steps2
-
-    print(f'min steps = {totalSteps}')
+    print(f'min steps = {np.min(totalSteps)}')
 
 
 class Point:
     """
-    blah
+    A simple point class
     """
     def __init__(self, x: int, y: int):
         """
-        blah
+        Constructor
         """
         self.x = x
         self.y = y
 
     def __eq__(self, other):
         """
-        blah
+        Equality operator
         """
         return self.x == other.x and self.y == other.y
 
+    def __lt__(self, other):
+        """
+        Less than operator
+        """
+        if self.x < other.x:
+            return True
+        elif self.x == other.x:
+            if self.y < other.y:
+                return True
+
+        return False
+
+    def __add__(self, other):
+        """
+        Addition operator
+        """
+        return Point(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other):
+        """
+        subtraction operator
+        """
+        return Point(self.x - other.x, self.y - other.y)
+
+    def __str__(self):
+        """
+        string operator
+        """
+        return f'Point({self.x}, {self.y})'
+
+    def __repr__(self):
+        """
+        representation operator
+        """
+        return self.__str__()
+
     def manhattenDistance(self):
         """
-        blah
+        Finds the manhatten distance from (0,0)
         """
         return abs(self.x) + abs(self.y)
 
 
+def absPoints(points: np.ndarray) -> List[Point]:
+    """
+    Takes the absolute value of a list of points
+    """
+    return [Point(abs(point.x), abs(point.y)) for point in points]
+
+
 class Direction(Enum):
     """
-    blah
+    Directional Enum
     """
     RIGHT = 1
     LEFT = 2
@@ -118,18 +125,19 @@ class Direction(Enum):
 
 class Edge:
     """
-    blah
+    Simple Class for holding an Edge
     """
     def __init__(self, direction: Direction, length: int):
+        """
+        Constructor
+        """
         self.direction = direction
         self.length = length
 
 
 def parsePathEdge(edge: str) -> Edge:
     """
-
-    :param edge:
-    :return:
+    Parses the input file and forms Edge objects
     """
     if edge[0] == 'R':
         direction = Direction.RIGHT
@@ -147,8 +155,7 @@ def parsePathEdge(edge: str) -> Edge:
 
 def readInput() -> Tuple[List[Edge], List[Edge]]:
     """
-
-    :return:
+    reads in and parses the input file
     """
     with open(INPUT_FILE) as f:
         wire1Path = f.readline().strip()
@@ -165,12 +172,14 @@ def readInput() -> Tuple[List[Edge], List[Edge]]:
 
 def createEdgeMap(path: List[Edge]) -> List[Point]:
     """
-
-    :param path:
-    :return:
+    Creates an List of Points of the input Edges
     """
     y = list()
     x = list()
+
+    y.append(0)
+    x.append(0)
+
     for edge in path:
         if edge.direction == Direction.UP:
             y.append(edge.length)
@@ -217,12 +226,12 @@ def createEdgeMap(path: List[Edge]) -> List[Point]:
     for idx in range(len(rows)):
         points.append(Point(cols[idx], rows[idx]))
 
-    return points
+    return sorted(points[1:])  # remove the origin
 
 
 def findManhattenDistances(listLarge: List[Point], listSmall: List[Point]) -> List[int]:
     """
-    blah
+    Finds the manhatten distances of the path intersections
     """
     manhattenDistances = list()
     length = len(listSmall)
@@ -234,6 +243,80 @@ def findManhattenDistances(listLarge: List[Point], listSmall: List[Point]) -> Li
     return manhattenDistances
 
 
+def findIntersectionPathLengths(listLarge: List[Point],
+                                listSmall: List[Point],
+                                wire1Path: List[Edge],
+                                wire2Path: List[Edge]) -> List[int]:
+    """
+    Finds the total path length of the path intersections
+    """
+    intersections = list()
+    length = len(listSmall)
+    for idx, point in enumerate(listSmall):
+        print(f'idx = {idx} of {length}')
+        if point in listLarge:
+            intersections.append(point)
+
+    pathLengths = list()
+    for point in intersections:
+        pathLengths.append(getPathLengthToPoint(wire1Path, point) +
+                           getPathLengthToPoint(wire2Path, point))
+
+    return pathLengths
+
+
+def getPathLengthToPoint(wirePath: List[Edge], point: Point):
+    """
+    Calculates the path length to a input point
+    """
+    x = 0
+    y = 0
+    length = 0
+    for edge in wirePath:
+        if edge.direction == Direction.UP:
+            pointFound = False
+            for step in range(edge.length):
+                y += 1
+                length += 1
+                if x == point.x and y == point.y:
+                    pointFound = True
+                    break
+            if pointFound:
+                break
+        elif edge.direction == Direction.DOWN:
+            pointFound = False
+            for step in range(edge.length):
+                y -= 1
+                length += 1
+                if x == point.x and y == point.y:
+                    pointFound = True
+                    break
+            if pointFound:
+                break
+        elif edge.direction == Direction.RIGHT:
+            pointFound = False
+            for step in range(edge.length):
+                x += 1
+                length += 1
+                if x == point.x and y == point.y:
+                    pointFound = True
+                    break
+            if pointFound:
+                break
+        elif edge.direction == Direction.LEFT:
+            pointFound = False
+            for step in range(edge.length):
+                x -= 1
+                length += 1
+                if x == point.x and y == point.y:
+                    pointFound = True
+                    break
+            if pointFound:
+                break
+
+    return length
+
+
 if __name__ == '__main__':
-    closestIntersection()
-    # shortestIntersetion()
+    # closestIntersection()
+    shortestIntersetion()
