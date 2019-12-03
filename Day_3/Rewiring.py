@@ -1,6 +1,7 @@
 """
 Advent of code day 3
 """
+from enum import Enum
 import os
 import pathlib
 from typing import Tuple, List
@@ -20,19 +21,10 @@ def closestIntersection():
     wire1XY = createEdgeMap(wire1Path)
     wire2XY = createEdgeMap(wire2Path)
 
-    manhattenDistances = list()
     if len(wire1XY) > len(wire2XY):
-        length = len(wire2XY)
-        for idx, xyPair in enumerate(wire2XY):
-            print(f'idx = {idx} of {length}')
-            if xyPair in wire1XY:
-                manhattenDistances.append(np.sum(np.abs(xyPair)))
+        manhattenDistances = findManhattenDistances(wire1XY, wire2XY)
     else:
-        length = len(wire1XY)
-        for idx, xyPair in enumerate(wire1XY):
-            print(f'idx = {idx} of {length}')
-            if xyPair in wire2XY:
-                manhattenDistances.append(np.sum(np.abs(xyPair)))
+        manhattenDistances = findManhattenDistances(wire2XY, wire1XY)
 
     print(f'min distance = {np.min(manhattenDistances)}')
 
@@ -90,7 +82,88 @@ def shortestIntersetion():
     print(f'min steps = {totalSteps}')
 
 
-def createEdgeMap(path: List[str]) -> List[Tuple[int, int]]:
+class Point:
+    """
+    blah
+    """
+    def __init__(self, x: int, y: int):
+        """
+        blah
+        """
+        self.x = x
+        self.y = y
+
+    def __eq__(self, other):
+        """
+        blah
+        """
+        return self.x == other.x and self.y == other.y
+
+    def manhattenDistance(self):
+        """
+        blah
+        """
+        return abs(self.x) + abs(self.y)
+
+
+class Direction(Enum):
+    """
+    blah
+    """
+    RIGHT = 1
+    LEFT = 2
+    UP = 3
+    DOWN = 4
+
+
+class Edge:
+    """
+    blah
+    """
+    def __init__(self, direction: Direction, length: int):
+        self.direction = direction
+        self.length = length
+
+
+def parsePathEdge(edge: str) -> Edge:
+    """
+
+    :param edge:
+    :return:
+    """
+    if edge[0] == 'R':
+        direction = Direction.RIGHT
+    elif edge[0] == 'L':
+        direction = Direction.LEFT
+    elif edge[0] == 'U':
+        direction = Direction.UP
+    elif edge[0] == 'D':
+        direction = Direction.DOWN
+    else:
+        raise RuntimeError(f'Unknown direction {edge[0]}')
+
+    return Edge(direction, int(edge[1:]))
+
+
+def readInput() -> Tuple[List[Edge], List[Edge]]:
+    """
+
+    :return:
+    """
+    with open(INPUT_FILE) as f:
+        wire1Path = f.readline().strip()
+        wire1Path = wire1Path.split(',')
+
+        wire2Path = f.readline().strip()
+        wire2Path = wire2Path.split(',')
+
+    wire1Edges = [parsePathEdge(pathEdge) for pathEdge in wire1Path]
+    wire2Edges = [parsePathEdge(pathEdge) for pathEdge in wire2Path]
+
+    return wire1Edges, wire2Edges
+
+
+def createEdgeMap(path: List[Edge]) -> List[Point]:
     """
 
     :param path:
@@ -99,18 +172,14 @@ def createEdgeMap(path: List[str]) -> List[Tuple[int, int]]:
     y = list()
     x = list()
     for edge in path:
-        direction, length = parsePathEdge(edge=edge)
-
-        if direction == 'U':
-            y.append(length)
-        elif direction == 'D':
-            y.append(-length)
-        elif direction == 'R':
-            x.append(length)
-        elif direction == 'L':
-            x.append(-length)
-        else:
-            raise RuntimeError(f'Unknown direction {direction}')
+        if edge.direction == Direction.UP:
+            y.append(edge.length)
+        elif edge.direction == Direction.DOWN:
+            y.append(-edge.length)
+        elif edge.direction == Direction.RIGHT:
+            x.append(edge.length)
+        elif edge.direction == Direction.LEFT:
+            x.append(-edge.length)
 
     cumX = np.cumsum(x)
     cumY = np.cumsum(y)
@@ -127,52 +196,44 @@ def createEdgeMap(path: List[str]) -> List[Tuple[int, int]]:
     col = colStart
 
     for edge in path:
-        direction, length = parsePathEdge(edge=edge)
-
-        if direction == 'U':
-            edgeMap[row:row + length, col] = 1
-            row += length
-        elif direction == 'D':
-            edgeMap[row - length:row, col] = 1
-            row -= length
-        elif direction == 'R':
-            edgeMap[row, col:col + length] = 1
-            col += length
-        elif direction == 'L':
-            edgeMap[row, col - length:col] = 1
-            col -= length
+        if edge.direction == Direction.UP:
+            edgeMap[row:row + edge.length, col] = 1
+            row += edge.length
+        elif edge.direction == Direction.DOWN:
+            edgeMap[row - edge.length:row, col] = 1
+            row -= edge.length
+        elif edge.direction == Direction.RIGHT:
+            edgeMap[row, col:col + edge.length] = 1
+            col += edge.length
+        elif edge.direction == Direction.LEFT:
+            edgeMap[row, col - edge.length:col] = 1
+            col -= edge.length
 
     rows, cols = np.nonzero(edgeMap)
     rows -= rowStart
     cols -= colStart
 
-    return np.vstack([rows, cols]).T.tolist()
+    points = list()
+    for idx in range(len(rows)):
+        points.append(Point(cols[idx], rows[idx]))
+
+    return points
 
 
-def parsePathEdge(edge: str) -> Tuple[str, int]:
+def findManhattenDistances(listLarge: List[Point], listSmall: List[Point]) -> List[int]:
     """
-
-    :param edge:
-    :return:
+    blah
     """
-    return edge[0], int(edge[1:])
+    manhattenDistances = list()
+    length = len(listSmall)
+    for idx, point in enumerate(listSmall):
+        print(f'idx = {idx} of {length}')
+        if point in listLarge:
+            manhattenDistances.append(point.manhattenDistance())
 
-
-def readInput() -> Tuple[List[str], List[str]]:
-    """
-
-    :return:
-    """
-    with open(INPUT_FILE) as f:
-        wire1 = f.readline().strip()
-        wire1 = wire1.split(',')
-
-        wire2 = f.readline().strip()
-        wire2 = wire2.split(',')
-
-    return wire1, wire2
+    return manhattenDistances
 
 
 if __name__ == '__main__':
-    # closestIntersection()
-    shortestIntersetion()
+    closestIntersection()
+    # shortestIntersetion()
