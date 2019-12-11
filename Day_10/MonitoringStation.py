@@ -55,7 +55,7 @@ class Astroid:
         """
         encodes the coordinate
         """
-        return self.x * 100 + self.y
+        return self.x * 100 - self.y
 
 
 def findBestAstroid(verboseOutput: bool = False) -> Astroid:
@@ -84,6 +84,7 @@ def findBestAstroid(verboseOutput: bool = False) -> Astroid:
             maxAstroids = numVisibleAstroids
             bestAstroid = astroid
 
+    print(f'Best astroid = {bestAstroid}')
     print(f'Max number of astroids detected = {maxAstroids}')
 
     return bestAstroid
@@ -94,11 +95,7 @@ def vaporizeAstroids(verboseOutput: bool = False) -> None:
     Vaporizes the astroids
     """
     astroids = readInput()
-
     bestAstroid = findBestAstroid(verboseOutput=False)
-
-    if verboseOutput:
-        print(f'Best Astroid = {bestAstroid}')
 
     # remove the best astroid from the astroids list
     removeIdx = None
@@ -108,27 +105,32 @@ def vaporizeAstroids(verboseOutput: bool = False) -> None:
 
     del(astroids[removeIdx])
 
+    # find all of the angles from the best astroid
     angles = list()
     for astroid in astroids:
         angles.append(bestAstroid.angleClockwiseFromTop(astroid))
+        # if verboseOutput:
+        #     print(astroid, np.degrees(angles[-1]))
 
-    angles = np.sort(np.unique(angles))
-    lastAngle = angles[199]
-    print(f'lastAngle = {np.degrees(lastAngle)}')
+    uniqueAngles = np.unique(angles)
+    astroidsInDestroyOrder = list()
+    for angle in uniqueAngles:
+        idxs = np.nonzero(angles == angle)[0]
+        distances = list()
+        for idx in idxs:
+            distances.append(bestAstroid.distance(astroids[idx]))
 
-    astroidIdx = list()
-    distances = list()
-    for idx, astroid in enumerate(astroids):
-        if bestAstroid.angleClockwiseFromTop(astroid) == lastAngle:
-            distances.append(bestAstroid.distance(astroid))
-            astroidIdx.append(idx)
+        minDistanceIdx = np.argmin(distances)
+        astroidsInDestroyOrder.append(astroids[idxs[minDistanceIdx]])
 
-    print(distances)
-    sortedDistancesIdx = np.argsort(distances)
-    print(sortedDistancesIdx)
-    print(astroids[astroidIdx[sortedDistancesIdx[0]]])
+    if verboseOutput:
+        print('Astroids in destroy order')
+        for astroid in astroidsInDestroyOrder:
+            print(astroid)
 
-    print(f'200th astroid = {astroids[astroidIdx[sortedDistancesIdx[0]]].encode()}')
+    lastAstroid = astroidsInDestroyOrder[199]
+    print(f'200th astroid destroyed = {lastAstroid}')
+    print(f'200th astroid encode = {lastAstroid.encode()}')
 
 
 def readInput() -> List[Astroid]:
@@ -154,4 +156,4 @@ def readInput() -> List[Astroid]:
 
 if __name__ == '__main__':
     # findBestAstroid(verboseOutput=False)
-    vaporizeAstroids(verboseOutput=True)
+    vaporizeAstroids(verboseOutput=False)
