@@ -431,7 +431,7 @@ def playGame(verboseOuput: bool = False):
 
     score = 0
     paddleLocationX = None
-    tiles = np.zeros([1000, 1000])
+    tiles = np.zeros([25, 35])
     while True:
         x = arcade.execute()
         if x is None:
