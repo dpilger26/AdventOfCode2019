@@ -366,5 +366,5 @@ def readInput() -> NBody:
 
 
 if __name__ == '__main__':
-    # calcTotalEnergy(numSteps=1000, verboseOutput=True)
+    calcTotalEnergy(numSteps=1000, verboseOutput=False)
     calcStepsToHistory()
